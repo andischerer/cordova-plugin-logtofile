@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="cordova-plugin-logtofile"
+    version="0.0.1">
+    <name>Log to Filesystem Plugin</name>
+    <description>Cordova-Plugin logs to a logfile in filesystem</description>
+    <keywords>logger, log, logfile, local, log4j</keywords>
+    <license>MIT</license>
+    <repo>https://github.com/andischerer/cordova-plugin-logtofile.git</repo>
+    <issue>https://github.com/andischerer/cordova-plugin-logtofile/issues</issue>
+
+    <js-module src="www/logtofile.js" name="logtofile">
+        <clobbers target="logToFile" />
+    </js-module>
+
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="LogToFile" >
+                <param name="android-package" value="org.apache.cordova.logtofile.LogToFile"/>
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+        </config-file>
+       <source-file src="src/android/LogToFile.java" target-dir="src/org/apache/cordova/logtofile/" />
+       <framework src="src/android/log4j.gradle" custom="true" type="gradleReference"/>
+    </platform>
+
+</plugin>

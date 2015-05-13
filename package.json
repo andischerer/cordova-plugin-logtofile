@@ -1,0 +1,30 @@
+{
+  "name": "cordova-plugin-logtofile",
+  "version": "0.0.1",
+  "description": "Cordova-Plugin logs to a logfile in filesystem",
+  "cordova": {
+    "id": "cordova-plugin-logtofile",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andischerer/cordova-plugin-logtofile.git"
+  },
+  "keywords": [
+    "logger",
+    "log",
+    "logfile",
+    "local",
+    "log4j",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Andreas Scherer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andischerer/cordova-plugin-logtofile/issues"
+  },
+  "homepage": "https://github.com/andischerer/cordova-plugin-logtofile#readme"
+}
