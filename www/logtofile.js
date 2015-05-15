@@ -1,12 +1,27 @@
 var exec = cordova.require('cordova/exec');
 
 module.exports = {
-    writeLine: function (line, callback) {
-        callback = callback || function () { };
-        exec(callback.bind(null), // success
-             callback.bind(null), // failure
+    setLogfilePath: function (path, successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
              'LogToFile',
-             'writeLine',
+             'setLogfilePath',
+             [path]
+        );
+    },
+    getLogfilePath: function (successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'getLogfilePath',
+             []
+        );
+    },
+    write: function (line, successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'write',
              [line]
         );
     }
