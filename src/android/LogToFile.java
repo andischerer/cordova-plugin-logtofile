@@ -1,6 +1,7 @@
 package org.apache.cordova.logtofile;
 
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -98,7 +99,7 @@ public class LogToFile extends CordovaPlugin {
                 cordova.getThreadPool().execute(new Runnable() {
                     public void run() {
                         try {
-                            callbackContext.success(LOGFILE_PATH);
+                            callbackContext.success(Uri.fromFile(new File(LOGFILE_PATH)).toString());
                         } catch (Exception e) {
                             Log.d(TAG, "Log exception:" + e.toString());
                             callbackContext.error("Log exception:" + e.toString());
