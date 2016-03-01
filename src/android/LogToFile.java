@@ -3,57 +3,71 @@ package org.apache.cordova.logtofile;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Environment;
-import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-import de.mindpipe.android.logging.log4j.LogConfigurator;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.android.LogcatAppender;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.util.StatusPrinter;
 
 public class LogToFile extends CordovaPlugin {
-    private static final String TAG = LogToFile.class.getSimpleName();
     private static String LOGFILE_PATH;
 
-    Logger log;
-    LogConfigurator logConfigurator;
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(LogToFile.class);
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
+    }
 
-        ApplicationInfo info = cordova.getActivity().getApplicationInfo();
-        LOGFILE_PATH = info.dataDir + "/log.txt";
+    private void configureLogger() {
+        // reset the default context (which may already have been initialized)
+        // since we want to reconfigure it
+        LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
+        lc.reset();
 
-        // Logger Config
-        if (logConfigurator == null) {
-            logConfigurator = new LogConfigurator();
-        }
+        // setup FileAppender
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+        encoder.setContext(lc);
+        encoder.setPattern("%d{yyyy-dd-MM HH:mm:ss.SSS} : %-5level : %msg%n");
+        encoder.start();
 
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            logConfigurator.setFileName(LOGFILE_PATH);
-            //logConfigurator.setFilePattern("%d %-5p [%c{2}]-[%L] %m%n");
-            logConfigurator.setFilePattern("%d %-5p %m%n");
-            logConfigurator.setMaxFileSize(1024 * 1024 * 5);
-            logConfigurator.setMaxBackupSize(3);
-            logConfigurator.setUseFileAppender(true);
-            logConfigurator.setImmediateFlush(true);
-        } else {
-            logConfigurator.setUseFileAppender(false);
-        }
-        logConfigurator.setRootLevel(Level.DEBUG);
-        logConfigurator.setLevel("org.apache", Level.ERROR);
-        logConfigurator.setUseLogCatAppender(true);
-        logConfigurator.configure();
+        FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
+        fileAppender.setContext(lc);
+        //fileAppender.setLazy(true);
+        fileAppender.setAppend(true);
+        fileAppender.setName("FILE");
+        fileAppender.setFile(LOGFILE_PATH);
+        fileAppender.setEncoder(encoder);
+        fileAppender.start();
 
-        log = Logger.getLogger(LogToFile.class);
+        LogcatAppender logcatAppender = new LogcatAppender();
+        logcatAppender.setContext(lc);
+        logcatAppender.setName("LOGCAT");
+        logcatAppender.setEncoder(encoder);
+        logcatAppender.start();
+
+        // add the newly created appenders to the root logger;
+        // qualify Logger to disambiguate from org.slf4j.Logger
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.ALL);
+        root.addAppender(fileAppender);
+        root.addAppender(logcatAppender);
+
+        StatusPrinter.print(lc);
     }
 
     private static String pathCombine(String path1, String path2) {
@@ -72,8 +86,46 @@ public class LogToFile extends CordovaPlugin {
                         log.debug(line);
                         callbackContext.success();
                     } catch (Exception e) {
-                        Log.d(TAG, "Log exception:" + e.toString());
-                        callbackContext.error("Log exception:" + e.toString());
+                        callbackContext.error("Logger exception:" + e.toString());
+                    }
+                }
+            });
+
+        } else if (action.equals("info")) {
+            final String line = data.getString(0);
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        log.info(line);
+                        callbackContext.success();
+                    } catch (Exception e) {
+                        callbackContext.error("Logger exception:" + e.toString());
+                    }
+                }
+            });
+
+        } else if (action.equals("warn")) {
+            final String line = data.getString(0);
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        log.warn(line);
+                        callbackContext.success();
+                    } catch (Exception e) {
+                        callbackContext.error("Logger exception:" + e.toString());
+                    }
+                }
+            });
+
+        } else if (action.equals("error")) {
+            final String line = data.getString(0);
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        log.error(line);
+                        callbackContext.success();
+                    } catch (Exception e) {
+                        callbackContext.error("Logger exception:" + e.toString());
                     }
                 }
             });
@@ -101,8 +153,7 @@ public class LogToFile extends CordovaPlugin {
                         try {
                             callbackContext.success(Uri.fromFile(new File(LOGFILE_PATH)).toString());
                         } catch (Exception e) {
-                            Log.d(TAG, "Log exception:" + e.toString());
-                            callbackContext.error("Log exception:" + e.toString());
+                            callbackContext.error("Logger exception:" + e.toString());
                         }
                     }
                 });
@@ -112,4 +163,13 @@ public class LogToFile extends CordovaPlugin {
         }
         return true;
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // assume SLF4J is bound to logback-classic in the current environment
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        loggerContext.stop();
+    }
+
 }
