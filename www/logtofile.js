@@ -17,11 +17,35 @@ module.exports = {
              []
         );
     },
-    write: function (line, successCb, failureCb) {
+    debug: function (line, successCb, failureCb) {
         exec(successCb, // success
              failureCb, // failure
              'LogToFile',
-             'write',
+             'debug',
+             [line]
+        );
+    },
+    info: function (line, successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'info',
+             [line]
+        );
+    },
+    warn: function (line, successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'warn',
+             [line]
+        );
+    },
+    error: function (line, successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'error',
              [line]
         );
     }
