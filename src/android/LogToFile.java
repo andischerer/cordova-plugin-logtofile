@@ -76,9 +76,18 @@ public class LogToFile extends CordovaPlugin {
         return child.getPath();
     }
 
+    private boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public boolean execute(String action, JSONArray data, final CallbackContext callbackContext) throws JSONException {
-        if (action.equals("write")) {
+
+        if (action.equals("debug")) {
             final String line = data.getString(0);
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
@@ -135,14 +144,15 @@ public class LogToFile extends CordovaPlugin {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     try {
-                        LOGFILE_PATH = pathCombine(Environment.getExternalStorageDirectory().getAbsolutePath(), logfilePath);
-                        logConfigurator.setFileName(LOGFILE_PATH);
-                        logConfigurator.setResetConfiguration(true);
-                        logConfigurator.configure();
-                        callbackContext.success(LOGFILE_PATH);
+                        if (isExternalStorageWritable()) {
+                            LOGFILE_PATH = pathCombine(Environment.getExternalStorageDirectory().getAbsolutePath(), logfilePath);
+                            configureLogger();
+                            callbackContext.success(LOGFILE_PATH);
+                        } else {
+                            callbackContext.error("Logger config Error: External storage is not writable.");
+                        }
                     } catch (Exception e) {
-                        Log.d(TAG, "Log exception:" + e.toString());
-                        callbackContext.error("Log exception:" + e.toString());
+                        callbackContext.error("Logger exception:" + e.toString());
                     }
                 }
             });
