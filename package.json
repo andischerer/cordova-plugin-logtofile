@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-logtofile",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Cordova-Plugin logs to a logfile in filesystem",
   "cordova": {
     "id": "cordova-plugin-logtofile",
