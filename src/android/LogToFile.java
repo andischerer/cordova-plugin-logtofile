@@ -174,15 +174,15 @@ public class LogToFile extends CordovaPlugin {
             });
 
         } else if (action.equals("getLogfilePath")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        try {
-                            callbackContext.success(Uri.fromFile(new File(LOGFILE_PATH)).toString());
-                        } catch (Exception e) {
-                            callbackContext.error("Logger exception:" + e.toString());
-                        }
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        callbackContext.success(Uri.fromFile(new File(LOGFILE_PATH)).toString());
+                    } catch (Exception e) {
+                        callbackContext.error("Logger exception:" + e.toString());
                     }
-                });
+                }
+            });
 
         } else {
             return false;
