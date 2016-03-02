@@ -1,6 +1,5 @@
 package org.apache.cordova.logtofile;
 
-import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Environment;
 
@@ -20,8 +19,9 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.android.LogcatAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.util.StatusPrinter;
+import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 
 public class LogToFile extends CordovaPlugin {
     private static String LOGFILE_PATH;
@@ -34,26 +34,44 @@ public class LogToFile extends CordovaPlugin {
     }
 
     private void configureLogger() {
+        File targetFile = new File(LOGFILE_PATH);
+
         // reset the default context (which may already have been initialized)
         // since we want to reconfigure it
         LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
         lc.reset();
 
-        // setup FileAppender
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(lc);
         encoder.setPattern("%d{yyyy-dd-MM HH:mm:ss.SSS} : %-5level : %msg%n");
         encoder.start();
 
-        FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
-        fileAppender.setContext(lc);
-        //fileAppender.setLazy(true);
-        fileAppender.setAppend(true);
-        fileAppender.setName("FILE");
-        fileAppender.setFile(LOGFILE_PATH);
-        fileAppender.setEncoder(encoder);
-        fileAppender.start();
+        String filePattern = targetFile.getParent() + "/" + targetFile.getName() + ".%i.zip";
+        FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
+        rollingPolicy.setFileNamePattern(filePattern);
+        rollingPolicy.setMinIndex(1);
+        rollingPolicy.setMaxIndex(3);
+        rollingPolicy.setContext(lc);
 
+        SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
+        triggeringPolicy.setMaxFileSize("5MB");
+        triggeringPolicy.setContext(lc);
+
+        RollingFileAppender<ILoggingEvent> rollingFileAppender = new RollingFileAppender<ILoggingEvent>();
+        rollingFileAppender.setAppend(true);
+        rollingFileAppender.setName("FILE");
+        rollingFileAppender.setContext(lc);
+        rollingFileAppender.setFile(LOGFILE_PATH);
+        rollingFileAppender.setRollingPolicy(rollingPolicy);
+        rollingFileAppender.setTriggeringPolicy(triggeringPolicy);
+        rollingFileAppender.setEncoder(encoder);
+
+        triggeringPolicy.start();
+        rollingPolicy.setParent(rollingFileAppender);
+        rollingPolicy.start();
+        rollingFileAppender.start();
+
+        // Logcat appender
         LogcatAppender logcatAppender = new LogcatAppender();
         logcatAppender.setContext(lc);
         logcatAppender.setName("LOGCAT");
@@ -64,10 +82,8 @@ public class LogToFile extends CordovaPlugin {
         // qualify Logger to disambiguate from org.slf4j.Logger
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.ALL);
-        root.addAppender(fileAppender);
+        root.addAppender(rollingFileAppender);
         root.addAppender(logcatAppender);
-
-        StatusPrinter.print(lc);
     }
 
     private static String pathCombine(String path1, String path2) {
@@ -149,7 +165,7 @@ public class LogToFile extends CordovaPlugin {
                             configureLogger();
                             callbackContext.success(LOGFILE_PATH);
                         } else {
-                            callbackContext.error("Logger config Error: External storage is not writable.");
+                            callbackContext.error("Logger Error: Could not wirte logfile.");
                         }
                     } catch (Exception e) {
                         callbackContext.error("Logger exception:" + e.toString());
