@@ -17,6 +17,14 @@ module.exports = {
              []
         );
     },
+    getArchivedLogfilePaths: function (successCb, failureCb) {
+        exec(successCb, // success
+             failureCb, // failure
+             'LogToFile',
+             'getArchivedLogfilePaths',
+             []
+        );
+    },
     debug: function (line, successCb, failureCb) {
         exec(successCb, // success
              failureCb, // failure

@@ -184,6 +184,30 @@ public class LogToFile extends CordovaPlugin {
                 }
             });
 
+        } else if (action.equals("getArchivedLogfilePaths")) {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    try {
+                        JSONArray archivedfiles = new JSONArray();
+                        String logfileDir = new File(LOGFILE_PATH).getParent();
+
+                        File files[] = new File(logfileDir).listFiles();
+                        if (files != null) {
+                            for (File file : files) {
+                                if (!file.isDirectory() && file.exists()) {
+                                    if (file.getName().endsWith(".zip")) {
+                                        archivedfiles.put(Uri.fromFile(file));
+                                    }
+                                }
+                            }
+                        }
+                        callbackContext.success(archivedfiles);
+                    } catch (Exception e) {
+                        callbackContext.error("Logger exception:" + e.toString());
+                    }
+                }
+            });
+
         } else {
             return false;
         }

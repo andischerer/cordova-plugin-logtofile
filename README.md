@@ -29,6 +29,13 @@ window.logToFile.getLogfilePath(function (logfilePath) {
     // handle error
 });
 
+// get the all archived logfile paths as array
+window.logToFile.getArchivedLogfilePaths(function (archivedlogfiles) {
+    // dosomething with the archived logs
+}, function (err) {
+    // handle error
+});
+
 // write logmessages in different loglevels
 window.logToFile.debug('Sample debug message');
 window.logToFile.info('Sample info message');
