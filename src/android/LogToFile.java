@@ -1,5 +1,6 @@
 package org.apache.cordova.logtofile;
 
+import android.Manifest;
 import android.net.Uri;
 import android.os.Environment;
 
@@ -12,6 +13,7 @@ import org.json.JSONException;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -25,6 +27,9 @@ import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 
 public class LogToFile extends CordovaPlugin {
     private static String LOGFILE_PATH;
+
+    public static final String PERMISSION_WRITE_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+    public static final int WRITE_STORAGE_REQ_CODE = 0;
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(LogToFile.class);
 
@@ -100,6 +105,14 @@ public class LogToFile extends CordovaPlugin {
         return false;
     }
 
+    private boolean checkPermission() {
+        if(!cordova.hasPermission(PERMISSION_WRITE_STORAGE)) {
+            cordova.requestPermission(this, WRITE_STORAGE_REQ_CODE, PERMISSION_WRITE_STORAGE);
+            throw new SecurityException(PERMISSION_WRITE_STORAGE + " has not been granted.");
+        }
+        return true;
+    }
+
     @Override
     public boolean execute(String action, JSONArray data, final CallbackContext callbackContext) throws JSONException {
 
@@ -160,12 +173,12 @@ public class LogToFile extends CordovaPlugin {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     try {
-                        if (isExternalStorageWritable()) {
+                        if (isExternalStorageWritable() && checkPermission()) {
                             LOGFILE_PATH = pathCombine(Environment.getExternalStorageDirectory().getAbsolutePath(), logfilePath);
                             configureLogger();
                             callbackContext.success(LOGFILE_PATH);
                         } else {
-                            callbackContext.error("Logger Error: Could not wirte logfile.");
+                            callbackContext.error("Logger Error: Could not write logfile.");
                         }
                     } catch (Exception e) {
                         callbackContext.error("Logger exception:" + e.toString());
@@ -177,7 +190,16 @@ public class LogToFile extends CordovaPlugin {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     try {
-                        callbackContext.success(Uri.fromFile(new File(LOGFILE_PATH)).toString());
+                        if (LOGFILE_PATH != null) {
+                            File logfile = new File(LOGFILE_PATH);
+                            if (checkPermission() && logfile.exists()) {
+                                callbackContext.success(Uri.fromFile(logfile).toString());
+                            } else {
+                                throw new FileNotFoundException(Uri.fromFile(logfile).toString() + " could not be found.");
+                            }
+                        } else {
+                            throw new FileNotFoundException("LogfilePath is not set");
+                        }
                     } catch (Exception e) {
                         callbackContext.error("Logger exception:" + e.toString());
                     }
@@ -188,20 +210,28 @@ public class LogToFile extends CordovaPlugin {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
                     try {
-                        JSONArray archivedfiles = new JSONArray();
-                        String logfileDir = new File(LOGFILE_PATH).getParent();
-
-                        File files[] = new File(logfileDir).listFiles();
-                        if (files != null) {
-                            for (File file : files) {
-                                if (!file.isDirectory() && file.exists()) {
-                                    if (file.getName().endsWith(".zip")) {
-                                        archivedfiles.put(Uri.fromFile(file));
+                        if (LOGFILE_PATH != null) {
+                            File logfile = new File(LOGFILE_PATH);
+                            if (checkPermission() && logfile.exists()) {
+                                String logfileDir = logfile.getParent();
+                                JSONArray archivedfiles = new JSONArray();
+                                File files[] = new File(logfileDir).listFiles();
+                                if (files != null) {
+                                    for (File file : files) {
+                                        if (!file.isDirectory() && file.exists()) {
+                                            if (file.getName().endsWith(".zip")) {
+                                                archivedfiles.put(Uri.fromFile(file));
+                                            }
+                                        }
                                     }
                                 }
+                                callbackContext.success(archivedfiles);
+                            } else {
+                                throw new FileNotFoundException(Uri.fromFile(logfile).toString() + " could not be found.");
                             }
+                        } else {
+                            throw new FileNotFoundException("LogfilePath is not set");
                         }
-                        callbackContext.success(archivedfiles);
                     } catch (Exception e) {
                         callbackContext.error("Logger exception:" + e.toString());
                     }
