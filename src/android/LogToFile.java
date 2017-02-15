@@ -48,7 +48,7 @@ public class LogToFile extends CordovaPlugin {
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(lc);
-        encoder.setPattern("%d{yyyy-dd-MM HH:mm:ss.SSS} : %-5level : %msg%n");
+        encoder.setPattern("%d{yyyy-MM-dd HH:mm:ss.SSS} : %-5level : %msg%n");
         encoder.start();
 
         String filePattern = targetFile.getParent() + "/" + targetFile.getName() + ".%i.zip";
